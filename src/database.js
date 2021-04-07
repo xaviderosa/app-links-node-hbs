@@ -1,24 +1,28 @@
-const express = require("express");
-const morgan = require("morgan");
+const mysql = require('mysql');
 
+const {promisify} = require('util');
 
-//initialization 
-const app = express();
+const {database} = require('./keys');
 
+const pool = mysql.createPool(database);
 
-//settings 
-app.use("port", process.env.PORT || 4000);
-
-
-//middlewares
-app.use(morgan("dev"));
-
-
-//routes 
-
-//global variables
-
-// starting the server
-app.listen(app.get("port"), () =>{
-    console.log("listening on port", app.get("port"));
+pool.getConnection ((err, connection) => {
+    if(err) {
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            console.error('DATABASE CONNECTION WAS CLOSED');
+        }
+        if (err.code === 'ERR_CON_COUNT_ERROR') {
+            console.error('DATABASEA HAS TO MANY CONNECTION');
+        }
+        if(err.code === 'ECONNREFUSED') {
+            console.error('DATABASE CONNECTION WSA REFUSED');
+        }
+    }
+    if (connection) connection.release();
+    console.log('DB IS CONECTED');
+    return;
 });
+
+pool.query = promisify(pool.query);
+
+module.exports = pool;
